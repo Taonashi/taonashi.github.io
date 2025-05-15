@@ -8,8 +8,8 @@
   <!-- Bootstrap CSS -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 
-  <!-- Google Maps API -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg"></script>
+  <!-- Google Maps API с async и callback -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&libraries=marker&callback=initMap&loading=async" async defer></script>
 
   <style>
     html, body {
@@ -35,20 +35,15 @@
       overflow: hidden;
     }
 
-    .carousel-inner {
-      width: 100%;
-      overflow: hidden;
-    }
-
     .carousel-item {
       transition: transform 0.6s ease-in-out;
     }
 
     .carousel-item img {
       width: 100%;
-      height: auto; /* »зображени€ отображаютс€ полностью */
-      max-height: 200px; /* ќграничиваем высоту, чтобы окно не вылезло за экран */
-      object-fit: contain; /* —охран€ем пропорции, не обрезаем */
+      height: auto;
+      max-height: 200px;
+      object-fit: contain;
     }
 
     .carousel-control-prev,
@@ -81,7 +76,7 @@
       display: block;
     }
 
-    /* ”величиваем границы InfoWindow */
+    /* Увеличиваем границы InfoWindow */
     .gm-style-iw {
       padding: 15px !important;
       max-width: 875px !important;
@@ -94,7 +89,7 @@
       overflow: visible !important;
     }
 
-    /*  рестик Google Maps */
+    /* Крестик Google Maps */
     .gm-ui-hover-effect {
       display: block !important;
       top: 10px !important;
@@ -118,21 +113,50 @@
 
   <script>
     function initMap() {
-      const map = new google.maps.Map(document.getElementById('map'), {
+      // Проверяем, загрузился ли элемент #map
+      const mapElement = document.getElementById('map');
+      if (!mapElement) {
+        console.error('Элемент #map не найден в DOM');
+        return;
+      }
+
+      // Инициализируем карту
+      const map = new google.maps.Map(mapElement, {
         center: { lat: -34.397, lng: 150.644 },
-        zoom: 8
+        zoom: 8,
+        mapId: 'DEMO_MAP_ID' // Добавлен mapId (опционально, но может помочь с AdvancedMarkerElement)
       });
 
+      // Проверяем, загрузилась ли библиотека marker
+      if (!google.maps.marker || !google.maps.marker.AdvancedMarkerElement) {
+        console.error('Библиотека marker не загружена');
+        return;
+      }
+
+      // Создаем маркер с AdvancedMarkerElement
+      const marker = new google.maps.marker.AdvancedMarkerElement({
+        position: map.getCenter(),
+        map: map,
+        title: 'Click me',
+        content: (() => {
+          const el = document.createElement('div');
+          el.textContent = '??';
+          el.style.fontSize = '24px';
+          return el;
+        })()
+      });
+
+      // InfoWindow с каруселью и вкладками
       const infoWindow = new google.maps.InfoWindow({
         content: `
           <div class="info-window-content">
-            <!--  нопки переключени€ вкладок -->
+            <!-- Кнопки переключения вкладок -->
             <div class="tab-buttons">
               <button id="tabPhotos" class="btn btn-sm btn-primary active">Photos</button>
               <button id="tabDescription" class="btn btn-sm btn-outline-primary">Description</button>
             </div>
 
-            <!-- ¬кладка с каруселью -->
+            <!-- Вкладка с каруселью -->
             <div id="tabPhotosContent" class="tab-content active">
               <div id="carouselMap" class="carousel slide" data-interval="false">
                 <div class="carousel-inner">
@@ -155,7 +179,7 @@
               </div>
             </div>
 
-            <!-- ¬кладка с описанием -->
+            <!-- Вкладка с описанием -->
             <div id="tabDescriptionContent" class="tab-content">
               <h5>Image Descriptions:</h5>
               <p><strong>Slide 1:</strong> This is the description for the first image.</p>
@@ -167,40 +191,36 @@
         maxWidth: 875
       });
 
-      const marker = new google.maps.Marker({
-        position: map.getCenter(),
-        map: map,
-        title: 'Click me'
-      });
-
-      marker.addListener('click', () => {
+      // Обработчик клика по маркеру
+      marker.addListener('gmp-click', () => {
         infoWindow.open(map, marker);
 
-        // »нициализаци€ карусели и обработчиков вкладок
+        // Инициализация карусели и вкладок
         setTimeout(() => {
-          if (!$('#carouselMap').hasClass('carousel')) {
+          if ($('#carouselMap').length && !$('#carouselMap').hasClass('carousel')) {
             $('#carouselMap').carousel();
           }
 
-          // ќбработчики переключени€ вкладок
+          // Обработчики вкладок
           $('#tabPhotos').on('click', () => {
             $('#tabPhotosContent').addClass('active').siblings('.tab-content').removeClass('active');
             $('#tabPhotos').addClass('btn-primary').removeClass('btn-outline-primary');
             $('#tabDescription').removeClass('btn-primary').addClass('btn-outline-primary');
-            $('#carouselMap').carousel('cycle'); // ¬озобновл€ем карусель
+            $('#carouselMap').carousel('cycle');
           });
 
           $('#tabDescription').on('click', () => {
             $('#tabDescriptionContent').addClass('active').siblings('.tab-content').removeClass('active');
             $('#tabDescription').addClass('btn-primary').removeClass('btn-outline-primary');
             $('#tabPhotos').removeClass('btn-primary').addClass('btn-outline-primary');
-            $('#carouselMap').carousel('pause'); // ќстанавливаем карусель
+            $('#carouselMap').carousel('pause');
           });
         }, 500);
       });
     }
 
-    window.onload = initMap;
+    // Убедитесь, что initMap доступна глобально
+    window.initMap = initMap;
   </script>
 </body>
 </html>
